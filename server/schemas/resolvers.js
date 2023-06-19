@@ -61,7 +61,7 @@ resolvers = {
                     { new: true }
                 );
             }
-            throw new AuthenticationError('You need to be logged in!');
+            throw new AuthenticationError('You are not logged in!');
         },
     }
 }
