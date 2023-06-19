@@ -2,15 +2,12 @@ const { AuthenticationError } = require('apollo-server-express')
 const { User } = require('../models');
 const { signToken } = require('../utils/auth');
 
-resolvers = {
-    Qurery: {
-        user: async (parent, { userId }) => {
-            return User.findOne({ _id: userId })
-        },
+const resolvers = {
+    Query: {
 
         me: async (parent, args, context) => {
             if (context.user) {
-                return Profile.findOne({ _id: context.user._id });
+                return User.findOne({ _id: context.user._id });
             }
             throw new AuthenticationError('You need to be logged in!');
         },
@@ -21,7 +18,7 @@ resolvers = {
             const user = await User.findOne({ $or: [{ email }, { username }] });
 
             if (!user) {
-                throw new AuthenticationError('No profile with this email found!');
+                throw new AuthenticationError('No user with this email found!');
             }
 
             const correctPw = await user.isCorrectPassword(password);
@@ -34,18 +31,19 @@ resolvers = {
             return { token, user };
         },
 
-        addUser: async (parent, { username, email, password }) => {
-            const user = User.create({ username, email, password });
+        addUser: async (parent, args) => {
+           
+            const user = await User.create(args);
             const token = signToken(user)
 
             return { token, user }
         },
 
-        saveBook: async (parent, { userId, saveBook }, context) => {
+        saveBook: async (parent, { bookInput }, context) => {
             if (context.user) {
                 return User.findOneAndUpdate(
-                    { _id: userId },
-                    { $addToSet: { savedBooks: saveBook } },
+                    { _id: context.user._id },
+                    { $addToSet: { savedBooks: bookInput } },
                     { new: true }
                 );
             }
@@ -53,11 +51,11 @@ resolvers = {
             throw new AuthenticationError('You are not logged in!!')
         },
 
-        removeBook: async (parent, { bookId, saveBook }, context) => {
+        removeBook: async (parent, { bookId, }, context) => {
             if (context.user) {
                 return User.findOneAndUpdate(
-                    { _id: bookId },
-                    { $pull: { savedBooks: saveBook } },
+                    { _id: context.user, _id },
+                    { $pull: { savedBooks: { bookId } } },
                     { new: true }
                 );
             }
@@ -65,3 +63,5 @@ resolvers = {
         },
     }
 }
+
+module.exports =  resolvers
